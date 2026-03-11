@@ -93,6 +93,11 @@
           >
             <i class="fas fa-download text-xs"></i>
             Installed
+            <span
+              id="installedCount"
+              class="ml-1 text-gray-400 text-[10px] font-mono"
+              >(0 detected)</span
+            >
           </div>
 
           <div id="installedWalletsContainer">
@@ -211,22 +216,48 @@
       </div>
     </div>
 
+    <div
+      id="toast"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50"
+    ></div>
+
     <!-- YOUR ORIGINAL JS (UNCHANGED) -->
     <script>
       (function () {
-        const hasMetaMask = () =>
-          typeof window.ethereum !== "undefined" && window.ethereum.isMetaMask;
-        const hasBitget = () =>
-          typeof window.ethereum !== "undefined" &&
-          window.ethereum.isBitget === true;
+        /* ------------------------------
+TOAST POPUP
+--------------------------------*/
+
+        function showToast(message, isError = false) {
+          const toast = document.getElementById("toast");
+
+          toast.textContent = message;
+          toast.style.opacity = "1";
+          toast.style.backgroundColor = isError ? "#7f1d1d" : "#1e293b";
+
+          setTimeout(() => {
+            toast.style.opacity = "0";
+          }, 2500);
+        }
+
+        /* ------------------------------
+WALLET DETECTION
+--------------------------------*/
+
+        const hasMetaMask = () => window.ethereum && window.ethereum.isMetaMask;
+
+        const hasBitget = () => window.ethereum && window.ethereum.isBitget;
+
         const hasOKX = () =>
-          typeof window.okxwallet !== "undefined" ||
-          (typeof window.ethereum !== "undefined" &&
-            window.ethereum.isOkxWallet);
+          window.okxwallet || (window.ethereum && window.ethereum.isOkxWallet);
+
         const hasBrave = () =>
-          (typeof window.ethereum !== "undefined" &&
-            window.ethereum.isBraveWallet) ||
+          (window.ethereum && window.ethereum.isBraveWallet) ||
           (navigator.brave && navigator.brave.isBrave);
+
+        /* ------------------------------
+DETECT INSTALLED
+--------------------------------*/
 
         const installedWallets = [];
 
@@ -236,18 +267,21 @@
             id: "brave",
             icon: "fa-brands fa-brave",
           });
+
         if (hasBitget())
           installedWallets.push({
             name: "Bitget Wallet",
             id: "bitget",
             icon: "fa-solid fa-coins",
           });
+
         if (hasOKX())
           installedWallets.push({
             name: "OKX Wallet",
             id: "okx",
             icon: "fa-brands fa-opera",
           });
+
         if (hasMetaMask())
           installedWallets.push({
             name: "MetaMask",
@@ -255,27 +289,43 @@
             icon: "fab fa-ethereum",
           });
 
-        const installedRow = document.getElementById("installedRow");
+        /* ------------------------------
+RENDER INSTALLED WALLETS
+--------------------------------*/
 
-        installedWallets.forEach((w) => {
+        const installedRow = document.getElementById("installedRow");
+        const installedCount = document.getElementById("installedCount");
+
+        installedWallets.forEach((wallet) => {
           const btn = document.createElement("button");
 
           btn.className =
-            "flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500 bg-blue-50 text-blue-700 text-sm font-medium";
+            "flex items-center gap-2 px-4 py-2 rounded-full border border-green-500 bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition";
 
-          btn.innerHTML = `<i class="${w.icon}"></i>${w.name}<span class="text-xs bg-blue-600 text-white px-2 py-[2px] rounded-full ml-1">installed</span>`;
+          btn.innerHTML = `
+<i class="${wallet.icon}"></i>
+${wallet.name}
+<span class="text-[10px] bg-green-600 text-white px-2 py-[2px] rounded-full ml-1">✓ installed</span>
+`;
 
-          btn.addEventListener("click", () => connectWallet(w.id));
+          btn.addEventListener("click", () => connectWallet(wallet.name));
 
           installedRow.appendChild(btn);
         });
 
+        /* update detected count */
+
+        installedCount.innerText = `(${installedWallets.length} detected)`;
+
+        /* ------------------------------
+CONNECT WALLET
+--------------------------------*/
+
         const statusMsg = document.getElementById("statusMessage");
 
-        async function connectWallet(walletId) {
+        async function connectWallet(walletName) {
           try {
-            if (!window.ethereum)
-              throw new Error("No Ethereum wallet detected");
+            if (!window.ethereum) throw new Error("No wallet installed");
 
             const provider = new ethers.BrowserProvider(window.ethereum);
 
@@ -286,13 +336,21 @@
             const shortAddr = address.slice(0, 6) + "..." + address.slice(-4);
 
             statusMsg.innerText = "Connected: " + shortAddr;
+
+            showToast(`✅ Connected to ${walletName}`);
           } catch (err) {
-            statusMsg.innerText = "Error: " + err.message;
+            statusMsg.innerText = "Error: " + err.shortMessage;
+
+            showToast(`❌ ${err.shortMessage}`, true);
           }
         }
 
+        /* ------------------------------
+ATTACH BUTTON LISTENERS
+--------------------------------*/
+
         document.querySelectorAll(".wallet-btn").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
+          btn.addEventListener("click", () => {
             connectWallet(btn.dataset.wallet);
           });
         });
