@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Happy_bounty • connect a wallet</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ethers.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+  </head>
+
+  <body
+    class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-gray-100 to-gray-200"
+  >
+    <div
+      class="max-w-[760px] w-full bg-white/90 backdrop-blur-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-200"
+    >
+      <div class="flex flex-col md:flex-row">
+        <!-- CONNECT PANEL -->
+        <div class="flex-[1.2] min-w-[280px] p-8 bg-white">
+          <h2 class="text-2xl font-semibold text-gray-900 tracking-tight">
+            Log in to Happy_bounty
+          </h2>
+
+          <div class="text-gray-500 text-sm mt-1 mb-6">Welcome back!</div>
+
+          <!-- LOGIN ROW -->
+
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="font-medium text-gray-600"> Log in with </span>
+
+            <div class="flex flex-wrap gap-2">
+              <button
+                class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+                data-wallet="rainbow"
+              >
+                <i class="fas fa-rainbow text-purple-400"></i>
+                Rainbow
+              </button>
+
+              <button
+                class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+                data-wallet="base"
+              >
+                <i class="fas fa-database"></i>
+                Base Account
+              </button>
+
+              <button
+                class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+                data-wallet="metamask"
+              >
+                <i class="fab fa-ethereum"></i>
+                MetaMask
+              </button>
+
+              <button
+                class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+                data-wallet="walletconnect"
+              >
+                <i class="fas fa-qrcode"></i>
+                WalletConnect
+              </button>
+            </div>
+          </div>
+
+          <!-- DIVIDER -->
+
+          <div class="flex items-center gap-3 my-6">
+            <hr class="flex-1 border-gray-200" />
+            <span
+              class="text-xs uppercase tracking-wide text-gray-500 font-semibold"
+            >
+              Connect a Wallet
+            </span>
+            <hr class="flex-1 border-gray-200" />
+          </div>
+
+          <!-- INSTALLED -->
+
+          <div
+            class="text-xs uppercase font-semibold text-gray-500 mb-2 flex items-center gap-1"
+          >
+            <i class="fas fa-download text-xs"></i>
+            Installed
+          </div>
+
+          <div id="installedWalletsContainer">
+            <div id="installedRow" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- POPULAR -->
+
+          <div
+            class="text-xs uppercase font-semibold text-gray-500 mt-6 mb-2 flex items-center gap-1"
+          >
+            <i class="fas fa-fire text-xs"></i>
+            Popular
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+              data-wallet="rainbow"
+            >
+              <i class="fas fa-rainbow text-purple-400"></i>
+              Rainbow
+            </button>
+
+            <button
+              class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+              data-wallet="base"
+            >
+              <i class="fas fa-database"></i>
+              Base Account
+            </button>
+
+            <button
+              class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+              data-wallet="metamask"
+            >
+              <i class="fab fa-ethereum"></i>
+              MetaMask
+            </button>
+
+            <button
+              class="wallet-btn flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+              data-wallet="walletconnect"
+            >
+              <i class="fas fa-qrcode"></i>
+              WalletConnect
+            </button>
+          </div>
+
+          <!-- STATUS -->
+
+          <div
+            id="connectionStatus"
+            class="mt-6 flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 border border-gray-200 rounded-full"
+          >
+            <i class="fas fa-plug text-blue-600"></i>
+
+            <span id="statusMessage"> No wallet connected </span>
+          </div>
+        </div>
+
+        <!-- INFO PANEL -->
+
+        <div
+          class="flex-[0.9] bg-gray-50 border-t md:border-t-0 md:border-l border-gray-200 p-8"
+        >
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">
+            What is a Wallet?
+          </h3>
+
+          <div class="mb-6 text-sm text-gray-700 leading-relaxed">
+            <p class="mb-3">
+              <strong class="text-gray-900"
+                >A Home for your Digital Assets</strong
+              ><br />
+              Wallets are used to send, receive, store and display digital
+              assets like Ethereum and NFTs.
+            </p>
+
+            <p>
+              <strong class="text-gray-900">A New Way to Log In</strong><br />
+              Instead of creating new accounts and passwords on every website,
+              just connect your wallet.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-2 mb-6">
+            <a
+              href="#"
+              class="text-blue-600 font-medium flex items-center gap-1 hover:underline"
+            >
+              <i class="fas fa-wallet text-sm"></i>
+              Get a Wallet
+            </a>
+
+            <a
+              href="https://learn.rainbow.me/understanding-web3"
+              class="text-blue-600 font-medium flex items-center gap-1 hover:underline"
+            >
+              <i class="fas fa-circle-info text-sm"></i>
+              Learn More
+            </a>
+          </div>
+
+          <div class="text-xs text-gray-500 border-t pt-4">
+            By connecting your wallet, you agree to our
+            <a href="#" class="font-semibold text-gray-700 hover:underline"
+              >Terms of Use</a
+            >
+            and
+            <a href="#" class="font-semibold text-gray-700 hover:underline"
+              >Privacy Policy</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- YOUR ORIGINAL JS (UNCHANGED) -->
+    <script>
+      (function () {
+        const hasMetaMask = () =>
+          typeof window.ethereum !== "undefined" && window.ethereum.isMetaMask;
+        const hasBitget = () =>
+          typeof window.ethereum !== "undefined" &&
+          window.ethereum.isBitget === true;
+        const hasOKX = () =>
+          typeof window.okxwallet !== "undefined" ||
+          (typeof window.ethereum !== "undefined" &&
+            window.ethereum.isOkxWallet);
+        const hasBrave = () =>
+          (typeof window.ethereum !== "undefined" &&
+            window.ethereum.isBraveWallet) ||
+          (navigator.brave && navigator.brave.isBrave);
+
+        const installedWallets = [];
+
+        if (hasBrave())
+          installedWallets.push({
+            name: "Brave Wallet",
+            id: "brave",
+            icon: "fa-brands fa-brave",
+          });
+        if (hasBitget())
+          installedWallets.push({
+            name: "Bitget Wallet",
+            id: "bitget",
+            icon: "fa-solid fa-coins",
+          });
+        if (hasOKX())
+          installedWallets.push({
+            name: "OKX Wallet",
+            id: "okx",
+            icon: "fa-brands fa-opera",
+          });
+        if (hasMetaMask())
+          installedWallets.push({
+            name: "MetaMask",
+            id: "metamask",
+            icon: "fab fa-ethereum",
+          });
+
+        const installedRow = document.getElementById("installedRow");
+
+        installedWallets.forEach((w) => {
+          const btn = document.createElement("button");
+
+          btn.className =
+            "flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500 bg-blue-50 text-blue-700 text-sm font-medium";
+
+          btn.innerHTML = `<i class="${w.icon}"></i>${w.name}<span class="text-xs bg-blue-600 text-white px-2 py-[2px] rounded-full ml-1">installed</span>`;
+
+          btn.addEventListener("click", () => connectWallet(w.id));
+
+          installedRow.appendChild(btn);
+        });
+
+        const statusMsg = document.getElementById("statusMessage");
+
+        async function connectWallet(walletId) {
+          try {
+            if (!window.ethereum)
+              throw new Error("No Ethereum wallet detected");
+
+            const provider = new ethers.BrowserProvider(window.ethereum);
+
+            const accounts = await provider.send("eth_requestAccounts", []);
+
+            const address = accounts[0];
+
+            const shortAddr = address.slice(0, 6) + "..." + address.slice(-4);
+
+            statusMsg.innerText = "Connected: " + shortAddr;
+          } catch (err) {
+            statusMsg.innerText = "Error: " + err.message;
+          }
+        }
+
+        document.querySelectorAll(".wallet-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            connectWallet(btn.dataset.wallet);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>
