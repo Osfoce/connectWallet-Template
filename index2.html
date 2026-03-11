@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zealy – connect wallet (clone)</title>
+    <!-- Tailwind via CDN (v3) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for subtle icons (optional, but adds to the feel) -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <!-- Ethers (ethers.js) for wallet detection & connection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+    <style>
+      /* subtle custom grain / overlay to match modern login cards */
+      body {
+        background: #f9fafc;
+      }
+      .wallet-popup-trigger {
+        transition: all 0.15s ease;
+      }
+      .wallet-popup-trigger:hover {
+        background-color: #f3f4f6;
+        border-color: #d1d5db;
+      }
+      .z-panel {
+        box-shadow:
+          0 20px 35px -8px rgba(0, 10, 30, 0.15),
+          0 5px 12px -4px rgba(0, 0, 0, 0.05);
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen flex items-center justify-center p-4 font-sans antialiased bg-[#f4f7fb]"
+  >
+    <!-- main card – exact replica of zealy "connect a wallet" + welcome back section -->
+    <div
+      class="max-w-4xl w-full grid md:grid-cols-2 bg-white rounded-3xl z-panel overflow-hidden border border-gray-100"
+    >
+      <!-- left panel: "Log in to Zealy / Welcome back!" + provider buttons (Rainbow, Base, MetaMask, WalletConnect) -->
+      <div class="p-8 md:p-10 bg-white">
+        <h1 class="text-3xl font-semibold tracking-tight text-gray-900">
+          Log in to Zealy
+        </h1>
+        <p class="text-gray-500 mt-2 text-lg">Welcome back!</p>
+
+        <!-- large wallet icons row (log in with) -->
+        <div class="mt-8 space-y-3">
+          <p class="text-xs font-medium uppercase tracking-wider text-gray-400">
+            Log in with
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Rainbow (rainbowkit is not needed, we use generic wallet connect but for demo we link to walletconnect as placeholder, but actual click will attempt injected) 
+                         but we keep the design. We'll use injected only for metamask/brave etc. but to be faithful we add buttons that trigger wallet selectors.
+                         To keep it functional: clicking Rainbow will try to connect via walletconnect (bridge), but for simplicity we show a toast style.
+                         However specification: when click on metamask for example, metamask pops up. Same for brave and other detected wallets.
+                         So we implement generic connect function that checks injected provider.
+                    -->
+            <button
+              id="rainbow-btn"
+              class="wallet-popup-trigger flex items-center justify-center gap-2 py-3 px-2 border border-gray-200 rounded-xl text-gray-700 font-medium text-sm bg-white hover:bg-gray-50 transition"
+            >
+              <i class="fas fa-rainbow text-indigo-400"></i> Rainbow
+            </button>
+            <button
+              id="base-btn"
+              class="wallet-popup-trigger flex items-center justify-center gap-2 py-3 px-2 border border-gray-200 rounded-xl text-gray-700 font-medium text-sm bg-white hover:bg-gray-50 transition"
+            >
+              <i class="fas fa-database text-blue-500"></i> Base
+            </button>
+            <button
+              id="metamask-large-btn"
+              class="wallet-popup-trigger flex items-center justify-center gap-2 py-3 px-2 border border-gray-200 rounded-xl text-gray-700 font-medium text-sm bg-white hover:bg-gray-50 transition"
+            >
+              <i class="fab fa-ethereum text-yellow-500"></i> MetaMask
+            </button>
+            <button
+              id="walletconnect-large-btn"
+              class="wallet-popup-trigger flex items-center justify-center gap-2 py-3 px-2 border border-gray-200 rounded-xl text-gray-700 font-medium text-sm bg-white hover:bg-gray-50 transition"
+            >
+              <i class="fas fa-wallet text-blue-400"></i> WalletConnect
+            </button>
+          </div>
+        </div>
+
+        <!-- subtle divider / or continue with more options (but we replicate the bottom part of left side as per design? The design shows only these four, we also have the "Connect a Wallet" section on the right. Fine) -->
+        <div class="mt-10 text-xs text-gray-400 flex items-center">
+          <hr class="flex-1 border-gray-200" />
+          <span class="mx-3">secure login</span>
+          <hr class="flex-1 border-gray-200" />
+        </div>
+
+        <!-- extra info: "What is a Wallet?" appears on the right, but we put on left? no, right panel already contains it. So we stop left panel here.
+                 But original design shows left side only has the four login options + welcome back. So we stay minimal. -->
+      </div>
+
+      <!-- right panel: "Connect a Wallet" + installed/popular lists + what is a wallet + terms -->
+      <div class="p-8 md:p-10 bg-gray-50/80 border-l border-gray-200/70">
+        <h2 class="text-2xl font-semibold text-gray-800">Connect a Wallet</h2>
+
+        <!-- Installed section (dynamic wallets injected) -->
+        <div class="mt-6">
+          <p
+            class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3"
+          >
+            Installed
+            <span
+              id="installed-count-badge"
+              class="ml-2 text-gray-300 font-mono text-[10px]"
+              >(detected)</span
+            >
+          </p>
+          <div id="installed-wallets-list" class="space-y-2">
+            <!-- will be injected by js: e.g., Brave, Bitget, OKX, and MetaMask if installed, etc. but we also keep static lookalike skeleton -->
+            <!-- dynamic rendering ensures that we list only truly installed wallets. We'll keep a fallback. -->
+          </div>
+          <!-- fallback/hint if none installed: show "not detected" but also show some static? to keep UI close to original we list placeholders but better to display installed. 
+                     For realism, we also want to replicate the design "Installed: Brave Wallet, Bitget Wallet, OKX Wallet". So we keep them as buttons but disabled? Actually we detect. -->
+        </div>
+
+        <!-- Popular section (static, but click also attempts connect) -->
+        <div class="mt-6">
+          <p
+            class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3"
+          >
+            Popular
+          </p>
+          <div class="space-y-2">
+            <button
+              id="popular-rainbow"
+              class="wallet-popup-trigger w-full flex items-center gap-3 p-3 border border-gray-200 bg-white rounded-xl text-gray-800 text-sm font-medium hover:bg-gray-100 transition"
+            >
+              <i class="fas fa-rainbow text-indigo-400 w-5"></i> Rainbow
+            </button>
+            <button
+              id="popular-base"
+              class="wallet-popup-trigger w-full flex items-center gap-3 p-3 border border-gray-200 bg-white rounded-xl text-gray-800 text-sm font-medium hover:bg-gray-100 transition"
+            >
+              <i class="fas fa-database text-blue-500 w-5"></i> Base Account
+            </button>
+            <button
+              id="popular-metamask"
+              class="wallet-popup-trigger w-full flex items-center gap-3 p-3 border border-gray-200 bg-white rounded-xl text-gray-800 text-sm font-medium hover:bg-gray-100 transition"
+            >
+              <i class="fab fa-ethereum text-yellow-500 w-5"></i> MetaMask
+            </button>
+            <button
+              id="popular-walletconnect"
+              class="wallet-popup-trigger w-full flex items-center gap-3 p-3 border border-gray-200 bg-white rounded-xl text-gray-800 text-sm font-medium hover:bg-gray-100 transition"
+            >
+              <i class="fas fa-wallet text-blue-400 w-5"></i> WalletConnect
+            </button>
+          </div>
+        </div>
+
+        <!-- What is a wallet? info block (exact copy) -->
+        <div
+          class="mt-8 p-4 bg-white rounded-2xl border border-gray-200 shadow-sm"
+        >
+          <h3 class="font-semibold text-gray-800">What is a Wallet?</h3>
+          <p class="text-sm text-gray-600 mt-2">
+            <span class="font-medium">A Home for your Digital Assets</span
+            ><br />
+            Wallets are used to send, receive, store, and display digital assets
+            like Ethereum and NFTs.
+          </p>
+          <p class="text-sm text-gray-600 mt-3">
+            <span class="font-medium">A New Way to Log In</span><br />
+            Instead of creating new accounts and passwords on every website,
+            just connect your wallet.
+          </p>
+          <div class="flex gap-4 mt-4 text-sm">
+            <a href="#" class="text-indigo-600 hover:underline font-medium"
+              >Get a Wallet →</a
+            >
+            <a href="#" class="text-indigo-600 hover:underline font-medium"
+              >Learn More →</a
+            >
+          </div>
+        </div>
+
+        <!-- terms -->
+        <p class="text-xs text-gray-400 mt-6 leading-relaxed">
+          By connecting your wallet, you agree to our
+          <a href="#" class="text-gray-600 underline">Terms of Use</a> and
+          <a href="#" class="text-gray-600 underline">Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+
+    <!-- hidden status / toast container (for feedback) -->
+    <div
+      id="toast"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-3 rounded-full shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50"
+    ></div>
+
+    <script>
+      (function () {
+        // show toast helper
+        function showToast(msg, isError = false) {
+          const toast = document.getElementById("toast");
+          toast.textContent = msg;
+          toast.style.opacity = "1";
+          toast.style.backgroundColor = isError ? "#7f1d1d" : "#1e293b";
+          setTimeout(() => {
+            toast.style.opacity = "0";
+          }, 2500);
+        }
+
+        // detect installed injected wallets (ethereum providers)
+        function getInstalledWallets() {
+          const installed = [];
+          // if window.ethereum exists, we can detect some known wallets by inspecting properties or using provider detection
+          if (typeof window.ethereum !== "undefined") {
+            // check for brave: brave wallet injects ethereum.isBraveWallet
+            if (window.ethereum.isBraveWallet) {
+              installed.push({
+                name: "Brave Wallet",
+                icon: "fa-brands fa-brave",
+                id: "brave",
+              });
+            }
+            // check for metamask (also present even if others override)
+            if (window.ethereum.isMetaMask) {
+              // but we also want to show MetaMask only if it's not duplicate? we can add MetaMask
+              // However MetaMask might be detected, but we also need to know if it's actually MetaMask not others.
+              // But we want to show both metamask and other wallets that might be installed.
+              // For demonstration, we add MetaMask as separate if isMetaMask, but if brave also has isMetaMask? Actually brave does not set isMetaMask true. Good.
+              installed.push({
+                name: "MetaMask",
+                icon: "fab fa-ethereum",
+                id: "metamask",
+              });
+            }
+            // bitget wallet? we can't reliably detect all unless they set specific flags.
+            // We'll simulate detection with a mock for demonstration: but to be realistic we add a few based on common flags.
+            // OKX Wallet: sometimes injects okx wallet. Not easy without exhaustive. but we can add mock for demonstration since design includes them.
+            // For the purpose of this test, we add them manually for now as they are "Installed" according to design. But we also want to be dynamic.
+            // We want to reflect the exact design: Brave, Bitget, OKX. We'll add them if some condition, but because they may not be installed in real browser,
+            // we keep them as enabled options anyway. However the spec says "autoload installed wallets so that when i click on metamask for example pops up, same for brave".
+            // So we need to treat each button with correct connection flow. We'll make all buttons attempt connection via generic window.ethereum.
+            // For installed list, we can dynamically populate only truly installed wallets, but also keep them clickable.
+            // For demonstration we also add bitget and okx if we find certain properties, but often they are not exposed. We'll use fake detection flag to make the demo realistic.
+            // We can check for window.bitget or window.okxwallet.
+            if (window.bitget) {
+              installed.push({
+                name: "Bitget Wallet",
+                icon: "fa-solid fa-bolt",
+                id: "bitget",
+              });
+            }
+            if (window.okxwallet) {
+              installed.push({
+                name: "OKX Wallet",
+                icon: "fa-solid fa-coins",
+                id: "okx",
+              });
+            }
+            // If none of the extra flags, we still want to show the wallets mentioned in design (Brave, Bitget, OKX) with ability to click.
+            // But they may not be present, so we mock them for UI completeness and treat click as try to connect via injected.
+            // That's ok. To follow the design, we add them always but mark as "detected?" but we'll also add class for connection.
+          }
+          return installed;
+        }
+
+        // universal connect function using ethers
+        async function connectWallet(walletName) {
+          try {
+            if (typeof window.ethereum === "undefined") {
+              showToast(
+                "❌ No injected wallet found. Install MetaMask or another wallet.",
+                true,
+              );
+              return;
+            }
+            // request accounts
+            const accounts = await window.ethereum.request({
+              method: "eth_requestAccounts",
+            });
+            if (accounts && accounts.length > 0) {
+              const account = accounts[0];
+              const provider = new ethers.BrowserProvider(window.ethereum);
+              const network = await provider.getNetwork();
+              const chainId = network.chainId;
+              showToast(
+                `✅ Connected to ${walletName} | account: ${account.slice(0, 6)}...${account.slice(-4)}`,
+              );
+              console.log(
+                `Connected to ${walletName}`,
+                account,
+                "chainId:",
+                chainId,
+              );
+            } else {
+              showToast("⚠️ No accounts returned.", true);
+            }
+          } catch (error) {
+            console.error(error);
+            if (error.code === 4001) {
+              showToast("🔒 Connection rejected.", true);
+            } else {
+              showToast(`❌ Error: ${error.message?.substring(0, 30)}`, true);
+            }
+          }
+        }
+
+        // helper to attach listeners to wallet buttons (by selector)
+        function attachWalletListeners() {
+          // map of button ids to wallet display name
+          const buttonMap = [
+            // left panel
+            { id: "rainbow-btn", name: "Rainbow" },
+            { id: "base-btn", name: "Base" },
+            { id: "metamask-large-btn", name: "MetaMask" },
+            { id: "walletconnect-large-btn", name: "WalletConnect" },
+            // popular
+            { id: "popular-rainbow", name: "Rainbow" },
+            { id: "popular-base", name: "Base Account" },
+            { id: "popular-metamask", name: "MetaMask" },
+            { id: "popular-walletconnect", name: "WalletConnect" },
+          ];
+
+          buttonMap.forEach((item) => {
+            const btn = document.getElementById(item.id);
+            if (btn) {
+              btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                // if it's WalletConnect we would need separate library, but for demo we treat as same injected? Actually WalletConnect uses bridge, but we treat as metamask popup? not accurate. But to keep simple, we will try injected for all, but show toast for walletconnect to indicate it would open QR.
+                if (item.name === "WalletConnect") {
+                  showToast(
+                    "📱 WalletConnect: would open QR (demo) – using injected for demo",
+                    false,
+                  );
+                  // attempt connect as fallback? better just show.
+                  // We'll still try injected for demonstration.
+                  connectWallet("WalletConnect (via injected)");
+                } else {
+                  connectWallet(item.name);
+                }
+              });
+            }
+          });
+
+          // Also buttons that will be dynamically added (installed wallets) will be attached later.
+        }
+
+        // render installed wallets list dynamically based on detection
+        function renderInstalledWallets() {
+          const container = document.getElementById("installed-wallets-list");
+          if (!container) return;
+
+          // Detect wallets as best as possible, but also include at least static ones from design (Brave, Bitget, OKX) to match UI.
+          // But we also want to indicate detection. Let's build list.
+          let detected = [];
+
+          // base detection: window.ethereum present?
+          if (window.ethereum) {
+            // brave
+            if (window.ethereum.isBraveWallet)
+              detected.push({
+                name: "Brave Wallet",
+                icon: "fa-brands fa-brave",
+                id: "brave-detected",
+              });
+            // metamask (but we also put in popular)
+            if (window.ethereum.isMetaMask)
+              detected.push({
+                name: "MetaMask",
+                icon: "fab fa-ethereum",
+                id: "metamask-detected",
+              });
+
+            // bitget sometimes injects window.bitget
+            if (window.bitget)
+              detected.push({
+                name: "Bitget Wallet",
+                icon: "fa-solid fa-bolt",
+                id: "bitget-detected",
+              });
+            // okx: window.okxwallet
+            if (window.okxwallet)
+              detected.push({
+                name: "OKX Wallet",
+                icon: "fa-solid fa-coins",
+                id: "okx-detected",
+              });
+          }
+
+          // Even if not detected, we want to show Brave, Bitget, OKX as they appear in design but maybe dim?
+          // For better replication, we add them manually (if not already detected) with a "not installed?" style.
+          // But spec says "autoload installed wallets so that when i click on metamask for example pops up". That means we want click to connect even if we think it's installed.
+          // For better UX, we add all three wallets as interactive. But we can mark them as detected if found.
+          const designWallets = [
+            {
+              name: "Brave Wallet",
+              icon: "fa-brands fa-brave",
+              id: "inst-brave",
+            },
+            {
+              name: "Bitget Wallet",
+              icon: "fa-solid fa-bolt",
+              id: "inst-bitget",
+            },
+            { name: "OKX Wallet", icon: "fa-solid fa-coins", id: "inst-okx" },
+          ];
+
+          // create buttons list, prioritize detected but include all.
+          let finalWallets = [];
+          // push design wallets but mark if detected
+          for (let dw of designWallets) {
+            const found = detected.find(
+              (d) =>
+                d.name.includes(dw.name) ||
+                (dw.name === "Brave Wallet" && d.name === "Brave Wallet"),
+            );
+            if (found) {
+              finalWallets.push({ ...dw, detected: true });
+            } else {
+              finalWallets.push({ ...dw, detected: false }); // show as not installed? but still clickable.
+            }
+          }
+
+          // empty container
+          container.innerHTML = "";
+
+          finalWallets.forEach((w) => {
+            const btn = document.createElement("button");
+            btn.className = `wallet-popup-trigger w-full flex items-center gap-3 p-3 border ${w.detected ? "border-gray-300 bg-white" : "border-gray-200 bg-gray-100/50 text-gray-500"} rounded-xl text-sm font-medium hover:bg-gray-200 transition`;
+            btn.innerHTML = `<i class="${w.icon} ${w.detected ? "text-gray-700" : "text-gray-400"} w-5"></i> ${w.name} ${!w.detected ? '<span class="ml-auto text-[10px] text-gray-400">(not detected)</span>' : '<span class="ml-auto text-[10px] text-green-600">✓ installed</span>'}`;
+            // click always attempts connection (maybe fallback for not detected, but they can try)
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              connectWallet(w.name);
+            });
+            container.appendChild(btn);
+          });
+
+          // update count badge
+          const detectedCount = finalWallets.filter((w) => w.detected).length;
+          const badge = document.getElementById("installed-count-badge");
+          if (badge) {
+            badge.innerText = `(${detectedCount} detected)`;
+          }
+        }
+
+        // initialize on load
+        window.addEventListener("load", () => {
+          attachWalletListeners();
+          renderInstalledWallets();
+
+          // re-attach any newly created dynamic buttons? already done inside renderInstalledWallets.
+          // also handle if window.ethereum gets injected later (rare) but ignore.
+        });
+
+        // optional: re-run detection if ethereum appears after load? but fine.
+      })();
+    </script>
+
+    <!-- additional note: also all buttons "Get a Wallet" and "Learn More" are dummy links -->
+  </body>
+</html>
